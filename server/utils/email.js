@@ -11,6 +11,14 @@ const transporter = nodemailer.createTransport({
     },
 });
 
+transporter.verify(function (error, success) {
+  if (error) {
+    console.log(error);
+  } else {
+    console.log("SMTP Server Ready");
+  }
+});
+
 const sendBookingEmail = async (userEmail, userName, eventTitle) => {
     try {
         const mailOptions = {
