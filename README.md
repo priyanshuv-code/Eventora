@@ -81,3 +81,4 @@ cd client
 npm run dev
 ```
 *(Client will run on a local port provided by Vite, typically `http://localhost:5173`)*
+# Eventora
