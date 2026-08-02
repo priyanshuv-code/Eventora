@@ -16,6 +16,25 @@ const EventDetail = () => {
     const [error, setError] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
 
+    // --- NAYE STATES FOR RESEND OTP TIMER ---
+    const [timer, setTimer] = useState(60);
+    const [isResendDisabled, setIsResendDisabled] = useState(true);
+
+    // --- TIMER EFFECT ---
+    useEffect(() => {
+        let interval;
+        // Timer tabhi chalega jab OTP dikh raha ho (showOTP === true)
+        if (showOTP && timer > 0 && isResendDisabled) {
+            interval = setInterval(() => {
+                setTimer((prev) => prev - 1);
+            }, 1000);
+        } else if (timer === 0) {
+            setIsResendDisabled(false); // Timer 0 hote hi button enable kar do
+        }
+        return () => clearInterval(interval);
+    }, [showOTP, timer, isResendDisabled]);
+
+    // FETCH EVENT DETAILS
     useEffect(() => {
         const fetchEvent = async () => {
             try {
@@ -30,6 +49,7 @@ const EventDetail = () => {
         fetchEvent();
     }, [id]);
 
+    // HANDLE FIRST BOOKING & OTP VERIFICATION
     const handleBooking = async () => {
         if (!user) {
             navigate('/login');
@@ -41,10 +61,14 @@ const EventDetail = () => {
 
         try {
             if (!showOTP) {
+                // Pehli baar OTP bhejne ke liye
                 await api.post('/bookings/send-otp');
                 setShowOTP(true);
+                setTimer(60); // Naya OTP bheja toh timer wapas 60 par
+                setIsResendDisabled(true);
                 setSuccessMsg('OTP sent to your email. Please verify to confirm booking.');
             } else {
+                // OTP Verify aur Confirm karne ke liye
                 await api.post('/bookings', { eventId: event._id, otp });
                 setSuccessMsg('Booking requested! Awaiting admin confirmation.');
                 setShowOTP(false);
@@ -55,6 +79,25 @@ const EventDetail = () => {
             setError(err.response?.data?.message || 'Booking failed');
         } finally {
             setBookingLoading(false);
+        }
+    };
+
+    // --- HANDLE RESEND OTP ---
+    const handleResendOTP = async () => {
+        try {
+            setIsResendDisabled(true);
+            setTimer(60); // Timer wapas reset karein
+            setError('');
+            setSuccessMsg('Resending new OTP...');
+
+            // Auth route par resend OTP API call karein
+            await api.post('/auth/resend-otp', { email: user.email });
+            
+            setSuccessMsg('New OTP sent successfully to your email.');
+        } catch (err) {
+            setError(err.response?.data?.message || 'Error resending OTP');
+            setIsResendDisabled(false);
+            setTimer(0);
         }
     };
 
@@ -142,6 +185,21 @@ const EventDetail = () => {
                                     onChange={(e) => setOtp(e.target.value)}
                                     maxLength="6"
                                 />
+                                {/* --- RESEND OTP BUTTON YAHAN ADD KIYA HAI --- */}
+                                <div className="mt-3 text-right">
+                                    <button 
+                                        type="button"
+                                        disabled={isResendDisabled}
+                                        onClick={handleResendOTP}
+                                        className={`text-sm font-semibold transition-colors ${
+                                            isResendDisabled 
+                                            ? 'text-gray-400 cursor-not-allowed' 
+                                            : 'text-blue-600 hover:text-blue-800 hover:underline'
+                                        }`}
+                                    >
+                                        {isResendDisabled ? `Resend OTP in ${timer}s` : 'Resend OTP'}
+                                    </button>
+                                </div>
                             </div>
                         )}
 
@@ -155,6 +213,7 @@ const EventDetail = () => {
                         >
                             {bookingLoading ? 'Processing...' : (showOTP ? 'Verify OTP & Confirm' : (successMsg && !showOTP ? 'Request Sent' : (isSoldOut ? 'Sold Out' : 'Confirm Registration')))}
                         </button>
+                        
                         {error && <p className="text-red-500 mt-4 text-center font-medium bg-red-50 p-2 rounded">{error}</p>}
                         {successMsg && <p className="text-green-600 mt-4 text-center font-medium bg-green-50 p-2 rounded">{successMsg}</p>}
                     </div>
