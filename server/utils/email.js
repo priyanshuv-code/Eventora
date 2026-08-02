@@ -11,7 +11,6 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// Verify SMTP connection when server starts
 transporter.verify((error, success) => {
     if (error) {
         console.error("SMTP Verify Error:", error);
@@ -23,7 +22,7 @@ transporter.verify((error, success) => {
 const sendBookingEmail = async (userEmail, userName, eventTitle) => {
     try {
         const mailOptions = {
-            from: `"Eventora" <${process.env.EMAIL_USER}>`,
+            from: '"Eventora" <pkverma012345678910@gmail.com>',
             to: userEmail,
             subject: `Booking Confirmed: ${eventTitle}`,
             html: `
@@ -54,7 +53,7 @@ const sendOTPEmail = async (userEmail, otp, type) => {
                 : "Please use the following OTP to verify and confirm your booking.";
 
         const mailOptions = {
-            from: `"Eventora" <${process.env.EMAIL_USER}>`,
+            from: '"Eventora" <pkverma012345678910@gmail.com>',
             to: userEmail,
             subject,
             html: `
